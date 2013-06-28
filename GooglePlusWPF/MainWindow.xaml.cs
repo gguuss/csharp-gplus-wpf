@@ -17,50 +17,70 @@ using System.Windows.Shapes;
 using System.Diagnostics;
 using System.Threading;
 using System.Windows.Threading;
-// DotNetOpenAuth
-using DotNetOpenAuth.Messaging;
-using DotNetOpenAuth.OAuth2;
-//Google
+
+// Libraries for Google APIs
 using Google.Apis.Authentication.OAuth2;
 using Google.Apis.Authentication.OAuth2.DotNetOpenAuth;
+using Google.Apis.Services;
 using Google.Apis.Util;
-using System.Web;
-// The generated plus class
-using Plus.v1;
+using Google.Apis.Plus.v1;
+using Google.Apis.Plus.v1.Data;
+
+// For OAuth2
+using DotNetOpenAuth.Messaging;
+using DotNetOpenAuth.OAuth2;
+
+
 // For reading window titles
 using System.Runtime.InteropServices;
 
 namespace GooglePlusWPF
 {
+
+    /// <summary>
+    /// Class for storing client configuration
+    /// Create these from https://code.google.com/apis/console
+    /// </summary>
+    public static class ClientCredentials
+    {
+        static public string ClientID = "YOUR_CLIENT_ID";
+        static public string ClientSecret = "YOUR_CLIENT_SECRET";
+    }
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
 
-        
+        // Used for polling windows/reading the auth code from the window title
         [ DllImport("user32.dll") ] 
         static extern int GetForegroundWindow(); 
         [ DllImport("user32.dll") ]
         static extern int GetWindowText(int hWnd, StringBuilder text, int count); 
 
- 
-
-        protected PlusService ps1;
-        Plus.v1.Data.Person me;
+        
+        /// <summary>
+        /// The service object for API calls to the Google+ API
+        /// </summary>
+        protected PlusService plusService;
+        /// <summary>
+        /// The currently authorized Google+ user
+        /// </summary>
+        protected Person me;
+        /// <summary>
+        /// Stores the OAuth v2 state (access token, refresh token, expiration, etc...)
+        /// </summary>
         private IAuthorizationState _authstate;
 
+        /// <summary>
+        /// WPF constructor
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
             me = null;
             _authstate = null;
-        }
-
-        private static class ClientCredentials
-        {
-            static public string ClientID = "YOUR_CLIENT_ID";
-            static public string ClientSecret = "YOUR_CLIENT_SECRET";
         }
 
         private OAuth2Authenticator<NativeApplicationClient> CreateAuthenticator()
@@ -75,7 +95,13 @@ namespace GooglePlusWPF
             return authenticator;
         }
 
-        string pollActiveWindowForAuthCode(int sleepTime){
+        /// <summary>
+        /// Polls active window titles to try and find the authorization code based on the window
+        /// string.
+        /// </summary>
+        /// <param name="sleepTime">The frequency used to poll, in milliseconds.</param>
+        /// <returns>The authorization code.</returns>
+        string PollActiveWindowForAuthCode(int sleepTime){
             string activeTitle = GetActiveWindowTitle();
             while (!activeTitle.StartsWith("Success"))
             {
@@ -88,6 +114,10 @@ namespace GooglePlusWPF
             return trimToAuthCode.Substring(0, trimToAuthCode.IndexOf(' '));
         }
 
+        /// <summary>
+        /// Helper for PollActiveWindowForAuthCode that retrieves the window string.
+        /// </summary>
+        /// <returns>The active window's title string.</returns>
         private string GetActiveWindowTitle() 
         { 
             const int nChars = 256; 
@@ -102,7 +132,12 @@ namespace GooglePlusWPF
             return null; 
         } 
 
-
+        /// <summary>
+        /// Retrieves the authorization object by starting the OAuth v2 flow in a new web browser.
+        /// </summary>
+        /// <param name="client">The client used for performing the API calls.</param>
+        /// <returns>An authorization state containing the data used for making API calls to
+        /// Google+.</returns>
         private IAuthorizationState GetAuthorization(NativeApplicationClient client)
         {
             String[] reqAuthScopes = new[] { "https://www.googleapis.com/auth/plus.login"};
@@ -114,64 +149,64 @@ namespace GooglePlusWPF
                 _authstate = new AuthorizationState(reqAuthScopes);
 
 
-                // Create the Url                
+                // Create the Url
                 Uri requestURL = client.RequestUserAuthorization(reqAuthScopes);
 
                 Uri url = client.RequestUserAuthorization(reqAuthScopes);
 
-                // Show the dialog.
+                // Show the dialog
                 Process.Start(url.ToString());
 
-                // TODO:  Watch the windows for the auth code from within there
+                // TODO: Do this better. You could close the window after done, you could track this
+                // better and can avoid the busy wait
                 //MessageBox.Show("Please click OK after you have copied the token from the web site.");
-                String authCode = pollActiveWindowForAuthCode(50);
+                String authCode = PollActiveWindowForAuthCode(50);
                 //String authCode = Clipboard.GetDataObject().GetData(DataFormats.Text).ToString();
 
                 if (string.IsNullOrEmpty(authCode))
                 {
-                    throw new Exception("The authentication request was cancelled by the user.");                
-                }                
+                    throw new Exception("The authentication request was cancelled by the user.");
+                }
 
-                IAuthorizationState state = client.ProcessUserAuthorization(new Uri("http://localhost"), _authstate);
-                return client.ProcessUserAuthorization(authCode, state);                
+                IAuthorizationState state = client.ProcessUserAuthorization(
+                        new Uri("http://localhost"), _authstate);
+                return client.ProcessUserAuthorization(authCode, state);
             }
 
             // Now perform auth flow
             return null;
-        }        
+        }
 
-        public void authenticate(){
-            // Register the authenticator.                        
+        /// <summary>
+        /// Authenticates a user.
+        /// </summary>
+        public void Authenticate(){
+            // Register the authenticator.
             var auth = CreateAuthenticator();
 
-            // Create the service.            
-            ps1 = new PlusService(auth);
-            if (ps1 != null)
+            // Create the service.
+            plusService = new PlusService(new BaseClientService.Initializer()
             {
-                PeopleResource.GetRequest grrrr = ps1.People.Get("me");
+                Authenticator = auth
+            });
+            if (plusService != null)
+            {
+                PeopleResource.GetRequest getReq = plusService.People.Get("me");
 
-                Plus.v1.Data.Person me = grrrr.Fetch();
+                Person me = getReq.Fetch();
 
                 if (me != null)
                 {
-                    textBlock1.Text = "You successfully Authenticated!";                    
-                    textBlock2.Text = "UserName: " + me.DisplayName + "\nURL: " + me.Url + "\nProfile id: " + me.Id;
+                    statusText.Text = "You successfully Authenticated!";
+                    resultText.Text = "UserName: " + me.DisplayName + "\nURL: " + me.Url +
+                        "\nProfile id: " + me.Id;
                 }
             }
         }
 
-        private void button1_Click(object sender, RoutedEventArgs e)
-        {            
-            authenticate();
-        }
-
-        private void button2_Click(object sender, RoutedEventArgs e)
-        {            
-
-            if (me != null)
-            {
-                // buy gus a beer
-            }            
+        private void AuthButtonClick(object sender, RoutedEventArgs e)
+        {
+            Authenticate();
         }
     }
 }

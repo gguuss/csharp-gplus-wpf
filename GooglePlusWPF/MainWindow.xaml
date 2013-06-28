@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="350" Width="584">
     <Grid Width="561">
-        <Button Content="Authenticate" Height="49" HorizontalAlignment="Left" Margin="444,33,0,0" Name="button1" VerticalAlignment="Top" Width="105" Click="button1_Click" />        
-        <TextBlock Height="71" HorizontalAlignment="Left" Margin="12,24,0,0" Name="textBlock1" Text="Click the authenticate button and then copy the code from Google."
+        <Button Content="Authenticate" Height="49" HorizontalAlignment="Left" Margin="444,33,0,0" Name="button1" VerticalAlignment="Top" Width="105" Click="AuthButtonClick" />
+        <TextBlock Height="71" HorizontalAlignment="Left" Margin="12,24,0,0" Name="statusText" Text="Click the authenticate button and then copy the code from Google."
                    VerticalAlignment="Top" Width="426" />
-        <TextBlock Height="175" HorizontalAlignment="Left" Margin="12,124,0,0" Name="textBlock2" Text="" VerticalAlignment="Top" Width="426" />
+        <TextBlock Height="175" HorizontalAlignment="Left" Margin="12,124,0,0" Name="resultText" Text="" VerticalAlignment="Top" Width="426" />
     </Grid>
 </Window>

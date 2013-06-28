@@ -46,8 +46,8 @@
     <Reference Include="Google.Apis.Authentication.OAuth2">
       <HintPath>Services\Google.Apis.Authentication.OAuth2.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Apis.Oauth2.v2">
-      <HintPath>Services\Google.Apis.Oauth2.v2.dll</HintPath>
+    <Reference Include="Google.Apis.Plus.v1">
+      <HintPath>Services\Google.Apis.Plus.v1.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json.Net35, Version=4.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -87,7 +87,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Plus.v1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
