@@ -1,3 +1,5 @@
+**Notice** [Google+ API is shutting down on March 7th, 2019](https://developers.google.com/+/api-shutdown).
+
 # Demo: Google+ integration with C#/.NET/WPF
 A very basic demonstration of how you can create an application
 that uses Google+ Sign-In in WPF.
